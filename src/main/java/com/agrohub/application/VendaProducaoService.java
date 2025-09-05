@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class VendaProducaoService {
@@ -60,5 +61,15 @@ public class VendaProducaoService {
 
     public List<VendaProducao> findByCulturaPlantada(CulturaPlantada culturaPlantada) {
         return repository.findByCulturaPlantada(culturaPlantada);
+    }
+
+    // Novo: buscar vendas por fazendaId (procura por vendas cuja culturaPlantada.fazenda.id == fazendaId)
+    public List<VendaProducao> findByFazenda(UUID fazendaId) {
+        return repository.findAll().stream()
+                .filter(v -> v.getCulturaPlantada() != null
+                        && v.getCulturaPlantada().getFazenda() != null
+                        && v.getCulturaPlantada().getFazenda().getId() != null
+                        && v.getCulturaPlantada().getFazenda().getId().equals(fazendaId))
+                .collect(Collectors.toList());
     }
 }
