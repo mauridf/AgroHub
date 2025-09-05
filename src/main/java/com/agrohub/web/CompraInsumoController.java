@@ -21,7 +21,7 @@ public class CompraInsumoController {
     @GetMapping
     public ResponseEntity<List<CompraInsumo>> listAll() {
         // Se quiser, podemos adicionar filtro por fazenda depois
-        return ResponseEntity.ok(service.findAllInsumos());
+        return ResponseEntity.ok(service.findAllCompras());
     }
 
     @PostMapping

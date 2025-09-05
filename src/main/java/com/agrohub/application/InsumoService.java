@@ -28,6 +28,10 @@ public class InsumoService {
         return insumoRepository.findAll();
     }
 
+    public List<CompraInsumo> findAllCompras() {
+        return compraRepository.findAll();
+    }
+
     public Insumo findInsumoById(UUID id) {
         return insumoRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Insumo não encontrado"));
