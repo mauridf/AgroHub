@@ -37,4 +37,34 @@ public class DashboardController {
     public ResponseEntity<List<DashboardDTOs.UsoDeAreas>> usoDeAreas(@PathVariable UUID produtorId) {
         return ResponseEntity.ok(service.usoDeAreas(produtorId));
     }
+
+    @GetMapping("/historico-produtividade/{produtorId}")
+    public ResponseEntity<List<Map<String, Object>>> evolucaoHistoricaProdutividade(@PathVariable UUID produtorId) {
+        return ResponseEntity.ok(service.evolucaoHistoricaProdutividade(produtorId));
+    }
+
+    @GetMapping("/distribuicao-culturas/{produtorId}")
+    public ResponseEntity<List<Map<String, Object>>> distribuicaoCulturas(@PathVariable UUID produtorId) {
+        return ResponseEntity.ok(service.distribuicaoCulturas(produtorId));
+    }
+
+    @GetMapping("/estoque-insumos/{produtorId}")
+    public ResponseEntity<List<Map<String, Object>>> estoqueInsumosPorSafra(@PathVariable UUID produtorId) {
+        return ResponseEntity.ok(service.estoqueInsumosPorSafra(produtorId));
+    }
+
+    @GetMapping("/eficiencia/{produtorId}")
+    public ResponseEntity<List<Map<String, Object>>> eficienciaPorFazenda(@PathVariable UUID produtorId) {
+        return ResponseEntity.ok(service.eficienciaPorFazenda(produtorId));
+    }
+
+    @GetMapping("/previsao-receita/{produtorId}")
+    public ResponseEntity<List<Map<String, Object>>> previsaoReceitaFutura(@PathVariable UUID produtorId) {
+        return ResponseEntity.ok(service.previsaoReceitaFutura(produtorId));
+    }
+
+    @GetMapping("/pizza/fazendas-estado/{produtorId}")
+    public ResponseEntity<List<Map<String, Object>>> fazendasPorEstado(@PathVariable UUID produtorId) {
+        return ResponseEntity.ok(service.fazendasPorEstado(produtorId));
+    }
 }
