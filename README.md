@@ -70,23 +70,3 @@ Todos os endpoints protegidos usam JWT:
 1. Faça login via `/api/auth/login` com `email` e `senha`
 2. Receba o token JWT
 3. Use `Authorization: Bearer <token>` nos headers das requisições
-
-## Testando com Postman
-1. Importe o arquivo `AgroHub.postman_collection.json`
-2. Configure variáveis de ambiente:
-   - `baseUrl`: http://localhost:8080/api
-   - `jwtToken`: token gerado após login
-
-## Testes unitários
-```bash
-mvn test
-```
-
-## Deploy
-- Configurar banco de dados de produção
-- Gerar JAR
-```bash
-mvn clean package
-java -jar target/agrohub-0.0.1-SNAPSHOT.jar
-```
-- Configurar variáveis de ambiente para JWT, DB e CORS
