@@ -1,71 +1,84 @@
 package com.agrohub.application;
 
-import com.agrohub.domain.CulturaPlantada;
-import com.agrohub.domain.Fazenda;
-import com.agrohub.repository.CulturaPlantadaRepository;
-import com.agrohub.repository.FazendaRepository;
-import com.agrohub.web.dto.ProducaoSafraDTO;
-import com.agrohub.web.dto.UsoAreasDTO;
-import com.agrohub.web.dto.RentabilidadeDTO;
+import com.agrohub.domain.*;
+import com.agrohub.web.dto.DashboardDTOs;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
 
-    private final CulturaPlantadaRepository culturaPlantadaRepository;
-    private final FazendaRepository fazendaRepository;
+    private final ProdutorService produtorService;
+    private final CulturaService culturaPlantadaService;
+    private final CustoOperacionalService custoService;
+    private final VendaProducaoService vendaService;
+    private final ProdutorService fazendaService;
 
-    public DashboardService(CulturaPlantadaRepository culturaPlantadaRepository,
-                            FazendaRepository fazendaRepository) {
-        this.culturaPlantadaRepository = culturaPlantadaRepository;
-        this.fazendaRepository = fazendaRepository;
+    public DashboardService(ProdutorService produtorService,
+                            CulturaService culturaPlantadaService,
+                            CustoOperacionalService custoService,
+                            VendaProducaoService vendaService,
+                            ProdutorService fazendaService) {
+        this.produtorService = produtorService;
+        this.culturaPlantadaService = culturaPlantadaService;
+        this.custoService = custoService;
+        this.vendaService = vendaService;
+        this.fazendaService = fazendaService;
     }
 
-    public List<ProducaoSafraDTO> producaoPorSafra() {
-        return culturaPlantadaRepository.findAll().stream()
-                .map(c -> new ProducaoSafraDTO(
-                        c.getSafra(),
-                        c.getFazenda().getNome(),
-                        c.getCultura().getNome(),
-                        c.getAreaPlantadaHa(),
-                        c.getProdutividadeEsperadaSacasHa(),
-                        c.getProdutividadeObtidaSacasHa(),
-                        c.getReceitaTotal()
-                ))
-                .collect(Collectors.toList());
+    public List<DashboardDTOs.ProducaoPorSafra> producaoPorSafra(UUID produtorId) {
+        var culturas = culturaPlantadaService.findByProdutor(produtorId);
+        return culturas.stream()
+                .collect(Collectors.groupingBy(c -> c.getSafra(),
+                        Collectors.summingDouble(c -> Optional.ofNullable(c.getProdutividadeObtidaSacasHa())
+                                .orElse(0.0) * c.getAreaPlantadaHa())))
+                .entrySet().stream()
+                .map(e -> new DashboardDTOs.ProducaoPorSafra(e.getKey(), e.getValue()))
+                .toList();
     }
 
-    public List<UsoAreasDTO> usoDeAreas() {
-        return fazendaRepository.findAll().stream()
-                .map(f -> new UsoAreasDTO(
+    public List<DashboardDTOs.RentabilidadePorHectare> rentabilidadePorHectare(UUID produtorId) {
+        var fazendas = fazendaService.findByProdutor(produtorId);
+        List<DashboardDTOs.RentabilidadePorHectare> result = new ArrayList<>();
+        for (Fazenda f : fazendas) {
+            double receitaTotal = vendaService.findByFazenda(f.getId()).stream()
+                    .mapToDouble(v -> v.getQuantidadeVendida() * v.getPrecoUnitario())
+                    .sum();
+            double custoTotal = custoService.findByFazenda(f).stream()
+                    .mapToDouble(CustoOperacional::getValor)
+                    .sum();
+            double area = Optional.ofNullable(f.getAreaAgricultavelHa()).orElse(1.0);
+            result.add(new DashboardDTOs.RentabilidadePorHectare(f.getNome(), (receitaTotal - custoTotal) / area));
+        }
+        return result;
+    }
+
+    public List<DashboardDTOs.CustoReceita> custosXReceita(UUID produtorId) {
+        var fazendas = fazendaService.findByProdutor(produtorId);
+        List<DashboardDTOs.CustoReceita> result = new ArrayList<>();
+        for (Fazenda f : fazendas) {
+            double receitaTotal = vendaService.findByFazenda(f.getId()).stream()
+                    .mapToDouble(v -> v.getQuantidadeVendida() * v.getPrecoUnitario())
+                    .sum();
+            double custoTotal = custoService.findByFazenda(f).stream()
+                    .mapToDouble(CustoOperacional::getValor)
+                    .sum();
+            result.add(new DashboardDTOs.CustoReceita(f.getNome(), custoTotal, receitaTotal));
+        }
+        return result;
+    }
+
+    public List<DashboardDTOs.UsoDeAreas> usoDeAreas(UUID produtorId) {
+        var fazendas = fazendaService.findByProdutor(produtorId);
+        return fazendas.stream()
+                .map(f -> new DashboardDTOs.UsoDeAreas(
                         f.getNome(),
-                        f.getAreaTotalHa(),
-                        f.getAreaAgricultavelHa(),
-                        f.getAreaVegetacaoHa(),
-                        f.getAreaConstruidaHa()
-                ))
-                .collect(Collectors.toList());
+                        Optional.ofNullable(f.getAreaAgricultavelHa()).orElse(0.0),
+                        Optional.ofNullable(f.getAreaVegetacaoHa()).orElse(0.0)))
+                .toList();
     }
 
-    public List<RentabilidadeDTO> rentabilidadePorHectare() {
-        return culturaPlantadaRepository.findAll().stream()
-                .map(c -> {
-                    double receita = c.getReceitaTotal() != null ? c.getReceitaTotal() : 0;
-                    double custo = c.getCustoTotal() != null ? c.getCustoTotal() : 0;
-                    double rentabilidadePorHa = c.getAreaPlantadaHa() != null && c.getAreaPlantadaHa() > 0 ?
-                            (receita - custo) / c.getAreaPlantadaHa() : 0;
-                    return new RentabilidadeDTO(
-                            c.getFazenda().getNome(),
-                            c.getSafra(),
-                            receita,
-                            custo,
-                            rentabilidadePorHa
-                    );
-                })
-                .collect(Collectors.toList());
-    }
+    // Podemos adicionar mais métodos para os outros gráficos e previsões
 }
-
